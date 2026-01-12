@@ -12,6 +12,7 @@ from minimax_deploy.benchmark import BenchmarkRunner, BenchmarkResult, DEFAULT_P
 from minimax_deploy.client import InferenceClient
 from minimax_deploy.config import get_settings
 from minimax_deploy.wandb_logger import WandbLogger
+from minimax_deploy.secrets import init_secrets
 
 # Global state
 _client: InferenceClient | None = None
@@ -22,6 +23,8 @@ _benchmark_status: dict[str, Any] = {"running": False, "progress": 0, "total": 0
 async def lifespan(app: FastAPI):
     """Manage application lifecycle."""
     global _client
+    # Load secrets from Infisical if configured
+    init_secrets()
     settings = get_settings()
     _client = InferenceClient(settings=settings)
     yield

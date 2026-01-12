@@ -24,6 +24,7 @@ dependencies = [
     "wandb>=0.16.0",
     "rich>=13.0.0",
     "typer>=0.9.0",
+    "infisicalsdk>=1.0.0",
 ]
 
 [project.optional-dependencies]

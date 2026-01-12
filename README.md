@@ -163,6 +163,35 @@ All settings can be configured via environment variables (prefix: `MINIMAX_`):
 | `MINIMAX_WANDB_PROJECT` | `minimax-m2.1-baseline` | W&B project |
 | `MINIMAX_WANDB_ENTITY` | `None` | W&B entity |
 
+## Secrets Management (Infisical)
+
+Secrets like `WANDB_API_KEY` and `HF_TOKEN` are automatically loaded from [Infisical](https://infisical.com) at runtime if configured.
+
+### Setup
+
+1. Create a Machine Identity in your Infisical project
+2. Add secrets (`WANDB_API_KEY`, `HF_TOKEN`) to your project
+3. Set bootstrap credentials:
+
+```bash
+export INFISICAL_CLIENT_ID=your-client-id
+export INFISICAL_CLIENT_SECRET=your-client-secret
+export INFISICAL_PROJECT_ID=your-project-id
+export INFISICAL_ENV=dev  # or staging, prod
+```
+
+Secrets are injected automatically when using the CLI or API. You can also use it programmatically:
+
+```python
+from minimax_deploy import init_secrets, load_secrets
+
+# Auto-inject WANDB_API_KEY, HF_TOKEN into environment
+init_secrets()
+
+# Or load specific secrets
+secrets = load_secrets(keys=["WANDB_API_KEY", "CUSTOM_KEY"])
+```
+
 ## Benchmark Metrics
 
 The benchmark captures:

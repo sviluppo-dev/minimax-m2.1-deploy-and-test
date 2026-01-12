@@ -7,12 +7,19 @@ from minimax_deploy.benchmark import BenchmarkRunner
 from minimax_deploy.client import InferenceClient
 from minimax_deploy.config import get_settings
 from minimax_deploy.wandb_logger import WandbLogger
+from minimax_deploy.secrets import init_secrets
 
 app = typer.Typer(
     name="minimax-deploy",
     help="MiniMax-M2.1 deployment and benchmarking CLI",
 )
 console = Console()
+
+
+@app.callback()
+def main_callback():
+    """Initialize secrets from Infisical if configured."""
+    init_secrets()
 
 
 @app.command()
