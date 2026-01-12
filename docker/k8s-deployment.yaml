@@ -1,0 +1,119 @@
+# Kubernetes deployment for minimax-deploy API
+# Assumes vLLM is running as a separate service
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minimax-deploy-config
+data:
+  MINIMAX_MODEL_NAME: "MiniMaxAI/MiniMax-M1-80k"
+  MINIMAX_BENCHMARK_NUM_REQUESTS: "100"
+  MINIMAX_BENCHMARK_CONCURRENCY: "10"
+  MINIMAX_BENCHMARK_MAX_TOKENS: "256"
+  MINIMAX_WANDB_PROJECT: "minimax-m2.1-baseline"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minimax-deploy-secrets
+type: Opaque
+stringData:
+  WANDB_API_KEY: ""  # Set your W&B API key
+  HF_TOKEN: ""       # Set if model is gated
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minimax-deploy-api
+  labels:
+    app: minimax-deploy-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minimax-deploy-api
+  template:
+    metadata:
+      labels:
+        app: minimax-deploy-api
+    spec:
+      containers:
+        - name: api
+          image: minimax-deploy:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: minimax-deploy-config
+            - secretRef:
+                name: minimax-deploy-secrets
+          env:
+            - name: MINIMAX_VLLM_BASE_URL
+              value: "http://vllm-service:8000/v1"  # Adjust to your vLLM service
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minimax-deploy-api
+spec:
+  selector:
+    app: minimax-deploy-api
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+
+---
+# Job for running benchmark
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minimax-benchmark
+spec:
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      containers:
+        - name: benchmark
+          image: minimax-deploy:latest
+          command: ["python", "-m", "minimax_deploy.cli", "benchmark", "--wandb"]
+          envFrom:
+            - configMapRef:
+                name: minimax-deploy-config
+            - secretRef:
+                name: minimax-deploy-secrets
+          env:
+            - name: MINIMAX_VLLM_BASE_URL
+              value: "http://vllm-service:8000/v1"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+      restartPolicy: Never
+  backoffLimit: 3

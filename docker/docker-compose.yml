@@ -1,0 +1,39 @@
+# Docker Compose for minimax-deploy
+# Note: vLLM server should be run separately on GPU host
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - MINIMAX_VLLM_BASE_URL=${MINIMAX_VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      - MINIMAX_MODEL_NAME=${MINIMAX_MODEL_NAME:-MiniMaxAI/MiniMax-M1-80k}
+      - MINIMAX_WANDB_PROJECT=${MINIMAX_WANDB_PROJECT:-minimax-m2.1-baseline}
+      - MINIMAX_WANDB_ENTITY=${MINIMAX_WANDB_ENTITY:-}
+      - WANDB_API_KEY=${WANDB_API_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Run benchmark as one-off job
+  benchmark:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    profiles:
+      - benchmark
+    environment:
+      - MINIMAX_VLLM_BASE_URL=${MINIMAX_VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      - MINIMAX_MODEL_NAME=${MINIMAX_MODEL_NAME:-MiniMaxAI/MiniMax-M1-80k}
+      - MINIMAX_BENCHMARK_NUM_REQUESTS=${MINIMAX_BENCHMARK_NUM_REQUESTS:-100}
+      - MINIMAX_BENCHMARK_CONCURRENCY=${MINIMAX_BENCHMARK_CONCURRENCY:-10}
+      - MINIMAX_WANDB_PROJECT=${MINIMAX_WANDB_PROJECT:-minimax-m2.1-baseline}
+      - WANDB_API_KEY=${WANDB_API_KEY:-}
+    command: ["python", "-m", "minimax_deploy.cli", "benchmark", "--wandb"]
