@@ -55,3 +55,5 @@ wandb/
 
 # Model cache
 .cache/
+temp.env
+wandb/

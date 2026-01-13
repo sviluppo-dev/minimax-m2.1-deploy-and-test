@@ -32,8 +32,8 @@ from rich.console import Console
 console = Console()
 
 # Project configuration
-PROJECT_NAME = "minimax-m2.1-tb2-alignment"
-ENTITY = None  # Will use default entity
+PROJECT_NAME = "Minimax-m2.1 Router Study"
+ENTITY = "sviluppo-ac"
 
 # Baseline metrics structure matching the proposal
 BASELINE_CONFIG = {
